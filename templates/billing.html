@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Retail billing{% endblock %}
+{% block content %}
+<header class="page-heading no-print">
+  <h1>Retail billing</h1>
+  <p>Add customer details and items to create a printable invoice.</p>
+</header>
+<div class="billing-grid no-print">
+  <form method="post" class="panel" id="billing" data-max-items="{{ max_items }}">
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+    <h2>Customer details</h2>
+    <div class="customer-grid">
+      <div><label for="name">Customer name</label><input id="name" name="name" autocomplete="section-customer name" maxlength="100" value="{{ customer.name }}" required></div>
+      <div><label for="contact">Email or phone <span class="optional">(optional)</span></label><input id="contact" name="contact" maxlength="150" value="{{ customer.contact }}"></div>
+    </div>
+    <label for="address">Address <span class="optional">(optional)</span></label>
+    <textarea id="address" name="address" autocomplete="section-customer street-address" maxlength="250" rows="2">{{ customer.address }}</textarea>
+    <div class="items-heading"><h2>Items</h2><button type="button" class="secondary" id="add-item">+ Add item</button></div>
+    <div id="items">
+      {% for row in rows %}
+      <fieldset class="item">
+        <legend>Item {{ loop.index }}</legend>
+        <label>Product name<input name="product" maxlength="100" value="{{ row.product }}" required></label>
+        <label>Quantity<input name="quantity" type="number" min="1" max="1000000" step="1" value="{{ row.quantity }}" required></label>
+        <label>Unit price ({{ currency }})<input name="price" type="number" min="0" max="100000000" step="0.01" value="{{ row.price }}" required></label>
+        <button type="button" class="secondary remove-item" aria-label="Remove item {{ loop.index }}" {% if rows | length == 1 %}disabled{% endif %}>×</button>
+      </fieldset>
+      {% endfor %}
+    </div>
+    <button type="submit" class="primary">Generate invoice <span aria-hidden="true">→</span></button>
+  </form>
+  <aside class="tier-panel panel">
+    <h2>Discount tiers</h2>
+    <p>Applied to the full subtotal.</p>
+    <dl>
+      {% for minimum, rate in tiers | reverse %}
+      <div><dt>{% if minimum %}{{ currency }}{{ "{:,}".format(minimum) }} and up{% else %}Below {{ currency }}{{ "{:,}".format(tiers[-2][0]) }}{% endif %}</dt><dd>{{ rate }}%</dd></div>
+      {% endfor %}
+    </dl>
+  </aside>
+</div>
+{% if invoice %}
+<section class="invoice panel" id="invoice" tabindex="-1" aria-labelledby="invoice-title">
+  <div class="invoice-heading">
+    <div><h2 id="invoice-title">Invoice</h2><p>{{ invoice.number }} · {{ invoice.date }}</p></div>
+    <button type="button" class="secondary no-print" id="print-invoice">Print invoice</button>
+  </div>
+  <div class="customer">
+    <h3>Billed to</h3>
+    <strong>{{ invoice.customer.name }}</strong>
+    {% if invoice.customer.contact %}<div>{{ invoice.customer.contact }}</div>{% endif %}
+    {% if invoice.customer.address %}<div class="address">{{ invoice.customer.address }}</div>{% endif %}
+  </div>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th scope="col">Product</th><th scope="col">Qty</th><th scope="col">Unit price</th><th scope="col">Amount</th></tr></thead>
+      <tbody>
+        {% for item in invoice["items"] %}
+        <tr><th scope="row">{{ item.name }}</th><td>{{ item.quantity }}</td><td>{{ currency }}{{ "{:,.2f}".format(item.price) }}</td><td>{{ currency }}{{ "{:,.2f}".format(item.amount) }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <dl class="totals">
+    <div><dt>Subtotal</dt><dd>{{ currency }}{{ "{:,.2f}".format(invoice.subtotal) }}</dd></div>
+    <div><dt>Discount ({{ invoice.rate }}%)</dt><dd>{% if invoice.discount %}−{% endif %}{{ currency }}{{ "{:,.2f}".format(invoice.discount) }}</dd></div>
+    <div class="grand-total"><dt>Total due</dt><dd>{{ currency }}{{ "{:,.2f}".format(invoice.total) }}</dd></div>
+  </dl>
+</section>
+{% endif %}
+{% endblock %}

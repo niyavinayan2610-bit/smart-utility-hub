@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Unit converter{% endblock %}
+{% block content %}
+<header class="page-heading">
+  <h1>Unit converter</h1>
+  <p>Convert measurements across length, weight, and temperature.</p>
+</header>
+<div class="converter-grid">
+  <form method="post" class="panel" id="converter" data-units='{{ units | tojson }}'>
+    <h2>Measurement</h2>
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+    <label for="category">Category</label>
+    <select id="category" name="category">
+      {% for key in units %}<option value="{{ key }}" {% if key == category %}selected{% endif %}>{{ key | capitalize }}</option>{% endfor %}
+    </select>
+    <label for="value">Value</label>
+    <input id="value" name="value" type="text" inputmode="decimal" maxlength="64" placeholder="Enter a measurement" value="{{ raw }}" required>
+    <div class="unit-grid">
+      <div><label for="source">From</label>
+        <select id="source" name="source">
+          {% for symbol, unit in units[category].items() %}<option value="{{ symbol }}" {% if source == symbol %}selected{% endif %}>{{ unit[0] }} ({{ symbol }})</option>{% endfor %}
+        </select>
+      </div>
+      <button type="button" id="swap" class="secondary swap" aria-label="Swap source and target units">⇄</button>
+      <div><label for="target">To</label>
+        <select id="target" name="target">
+          {% for symbol, unit in units[category].items() %}<option value="{{ symbol }}" {% if target == symbol %}selected{% endif %}>{{ unit[0] }} ({{ symbol }})</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <button class="primary" type="submit">Convert <span aria-hidden="true">→</span></button>
+  </form>
+  <section class="result-panel" aria-live="polite" aria-labelledby="result-title">
+    <span class="result-mark" aria-hidden="true">⇄</span>
+    <h2 id="result-title">Conversion result</h2>
+    {% if result %}
+      <p class="result-value">{{ result.output }} <span>{{ target }}</span></p>
+      <p>{{ result.input }} {{ source }} = {{ result.output }} {{ target }}</p>
+    {% else %}
+      <p>Your converted measurement will appear here.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
